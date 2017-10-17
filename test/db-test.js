@@ -29,9 +29,7 @@ test('save image', async t => {
   let db = t.context.db
   t.is(typeof db.saveImage, 'function', 'saveImage is function')
   let image = fixtures.getImage()
-  console.log(image)
   let create = await db.saveImage(image)
-  console.log(create)
   t.is(create.description, image.description)
   t.is(create.url, image.url)
   t.is(create.likes, image.likes)
@@ -58,6 +56,7 @@ test('get image', async t => {
   let create = await db.saveImage(image)
   let result = await db.getimage(create.public_id)
   t.deepEqual(create, result)
+  await t.throws(db.getUser('foo'), /not found/)
 })
 test('list all images', async t => {
   let db = t.context.db
@@ -66,8 +65,6 @@ test('list all images', async t => {
   let saveImages = images.map(img => db.saveImage(img))
   let created = await Promise.all(saveImages)
   let result = await db.getImages()
-  console.log(typeof result)
-  console.log(result.length)
   t.is(created.length, result.length)
 })
 test('save user', async t => {
@@ -89,6 +86,28 @@ test('get user', async t => {
   let user = fixtures.getUser()
   let create = await db.saveUser(user)
   let result = await db.getUser(user.username)
-
   t.deepEqual(create, result)
+  await t.throws(db.getUser('foo'), /not found/)
+})
+test('authenticate user', async t => {
+  let db = t.context.db
+
+  t.is(typeof db.authenticate, 'function', 'authenticate is a function')
+
+  let user = fixtures.getUser()
+  let plainPassword = user.password
+  let create = await db.saveUser(user)
+
+  let success = await db.authenticate(create.username, plainPassword)
+  t.true(success)
+
+  let fail = await db.authenticate(user.username, 'foo')
+  t.false(fail)
+
+  let failure = await db.authenticate('foo', 'bar')
+  t.false(failure)
+})
+test('list images by user', async t => {
+  let db = t.context.db
+  t.is(typeof db.getImageByUser, 'function', 'getImage is a function')
 })
