@@ -9,7 +9,7 @@ const utils = require('../lib/utils')
 
 test.beforeEach('setup database', async t => {
   const dbName = `platzigram_${uuid.v4()}`
-  const db = new Db({ db: dbName })
+  const db = new Db({ db: dbName, setup: true })
   await db.connect()
   t.true(db.connected, 'should be connectede')
   t.context.db = db
@@ -110,4 +110,34 @@ test('authenticate user', async t => {
 test('list images by user', async t => {
   let db = t.context.db
   t.is(typeof db.getImageByUser, 'function', 'getImage is a function')
+  let images = fixtures.getImages(10)
+  let userId = uuid.uuid()
+  let random = Math.round(Math.random() * images.length)
+  let saveImage = []
+  for (let i = 0; i < images.length; i++) {
+    if (i < random) {
+      images[i].user_id = userId
+    }
+    saveImage.push(db.saveImage(images[i]))
+  }
+  await Promise.all(saveImage)
+  let result = await db.getImageByUser(userId)
+  t.is(result.length, random)
+})
+test('list images by tag', async t => {
+  let db = t.context.db
+  t.is(typeof db.getImageByTag, 'function', 'getImage is a function')
+  let images = fixtures.getImages(10)
+  let tag = '#filterit'
+  let random = Math.round(Math.random() * images.length)
+  let saveImage = []
+  for (let i = 0; i < images.length; i++) {
+    if (i < random) {
+      images[i].description = tag
+    }
+    saveImage.push(db.saveImage(images[i]))
+  }
+  await Promise.all(saveImage)
+  let result = await db.getImageByTag(tag)
+  t.is(result.length, random)
 })
